@@ -1,0 +1,188 @@
+#include "../headerspace/WatershedAlg.h"
+#include <queue>
+#include <cstdlib> 
+#include <vector>
+
+#define NUMSIZE 8
+#define NSIZE 4
+
+using namespace cv;
+
+int** WatershedAlg::distanceTransform(Mat &image, int **markers) {
+
+        int rows=image.rows;
+	int cols=image.cols;
+
+    /**************************/
+        queue<int> qx, qy;
+        int dx[NUMSIZE]={-1, 1, 0, 0, -1, -1, 1, 1};
+        int dy[NUMSIZE]={0, 0, -1, 1, -1,  1, 1, -1};
+        //int numthresh=25;
+        int pixelThreshold=55;
+
+        int **matArr=new int*[image.rows];
+      // #pragma omp parallel for
+	for(int i=0;i<image.rows;i++){
+           matArr[i]=new int[image.cols];
+	}
+
+
+	bool** visArr=new bool*[rows];
+       // #pragma omp parallel for
+	for(int i=0;i<image.rows;i++){
+	     visArr[i]=new bool[cols];
+	}	
+
+       
+        int* plotx=new int[rows];
+	int* ploty=new int[cols];
+
+      // ########################
+       #pragma omp parallel for
+         for(int i=0;i<image.rows;i++){
+          #pragma omp parallel for
+             for(int j=0;j<image.cols;j++){
+	       matArr[i][j]=image.at<uchar>(i,j);
+	     }
+	 }
+
+
+   int **plots=new int*[rows];
+  // #pragma omp parallel for
+   for(int i=0;i<rows;i++){
+     plots[i]=new int[cols];
+   }
+
+        
+
+//******It makes the nearest piexel along 0 point sohow up and become the edge pixel
+//   
+       //#pragma omp simd
+       //
+        #pragma omp parallel for
+        for(int i = 0; i < image.rows; i++) {
+         #pragma omp parallel for
+	   for(int j = 0; j < image.cols; j++) {
+                if(matArr[i][j]!= ZERO) {
+                    continue;
+                }
+                //this is the part that sepreated from the edge
+                #pragma omp simd 
+                for(int h = 0; h < NSIZE; h++) {
+                    int nextX = i + dx[h];
+                    int nextY = j + dy[h];
+
+                    if( nextX < 0 || nextY < 0 || nextX >= image.rows || nextY >= image.cols ) {
+                        continue;
+                    }
+
+                    if( !visArr[nextX][nextY] && matArr[nextX][nextY]== ONE){ //(int) image.at<uchar>(nextX, nextY) == ONE ) {
+                        visArr[nextX][nextY] = true;
+
+			matArr[nextX][nextY]=pixelThreshold;
+			plots[nextX][nextY]=1;
+
+                    }
+                }
+                
+        }
+        
+     }
+    //******It makes the nearest piexel along 0 point sohow up and become the edge pixel
+    
+//edge is equal to 50
+        int maxVal=0;
+
+        for(int i=0;i<rows;i++){
+           for(int j=0;j<cols;j++){
+             if(plots[i][j]==1){
+
+                  qx.push(i);
+		  qy.push(j);
+	     }
+              
+
+	   }
+
+
+	}
+
+        //**Magic part**//
+        while(!qx.empty()) {
+            int crtX = qx.front(); qx.pop();
+            int crtY = qy.front(); qy.pop();
+
+            bool isBigger = true;//check
+        //    #pragma omp simd
+            for(int h = 0; h < NUMSIZE; h++) {
+                int nextX = crtX + dx[h];
+                int nextY = crtY + dy[h];
+
+                if( nextX < 0 || nextY < 0 || nextX >= image.rows || nextY >= image.cols || matArr[nextX][nextY] == ZERO ) {
+                    continue;
+                }
+
+                if( matArr[crtX][crtY] <= matArr[nextX][nextY]) {
+                    isBigger = false;
+                    
+                }
+                //pick the max local value of some regions
+
+                if( matArr[crtX][crtY] +1< matArr[nextX][nextY] ) {
+                    visArr[nextX][nextY] = true;
+                    matArr[nextX][nextY] =  min((matArr[crtX][crtY]+1), 254);
+                    
+                    //to get max value for difference between max value image and image
+                    if(maxVal<=matArr[nextX][nextY]){
+                       maxVal=matArr[nextX][nextY];
+                       
+                    }
+                     //to get max value for difference between max value image and image
+                    qx.push(nextX);
+                    qy.push(nextY);
+
+
+                }
+                //fout4<<endl;
+            }
+           //find the max value in local area
+            if(isBigger) {
+                markers[crtX][crtY]=2;
+      
+
+            }
+        
+        }
+
+				               
+    
+
+int markersize=0;
+	    for(int i=0;i<rows;i++){
+           for(int j=0;j<cols;j++){
+             if(markers[i][j]==2){
+
+              markersize++;       
+             }
+
+
+            }
+	    }
+
+
+
+
+
+   cout<<"markers size is"<<markersize<<endl;
+
+   pixelThreshold=pixelThreshold-1;
+   
+  // image.copyTo(Rimg);
+   int pnumThrshold=30;
+   int handlingType=0;
+   int neighbourType=0;
+   //removesmallregion(image,pnumThrshold,  handlingType, neighbourType, pixelThreshold);
+   removeholesopt(matArr,pnumThrshold,  handlingType, neighbourType, pixelThreshold,image.rows,image.cols);
+
+      return matArr;
+    }

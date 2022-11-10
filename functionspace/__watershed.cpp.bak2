@@ -1,0 +1,346 @@
+#include "../headerspace/WatershedAlg.h"
+#include<vector>
+using namespace cv;
+#define NUMSIZE 8
+#define NSIZE 4
+
+Mat WatershedAlg::watershed(int** image, int **markers,Mat &duplImage,int &rows,int &cols) {
+ 
+        int counter=0;
+        #pragma omp parallel for
+        for(int i=0;i<rows;i++){
+        #pragma omp parallel for
+                for(int j=0;j<cols;j++){
+
+                 if(markers[i][j]==2)
+                         counter++;
+
+              }
+        }
+
+Vec3b *colors=new Vec3b[counter];
+
+Vec3b vecColor={0,0,0};
+//#pragma omp parallel for
+ for(int i = 1; i <= counter; i++) {
+  vecColor[0] = rand()%255+0;
+  vecColor[1] = rand()%255+1;
+  vecColor[2] = rand()%255+2;
+  colors[i]=vecColor;
+ }
+
+
+cout<<"colors size"<<counter<<endl;
+
+
+      priority_queue<Pixel,vector<Pixel>,Compare> prioq;
+
+vector<Point>markersvec;
+
+for(int i=0;i<rows;i++){
+  for(int j=0;j<cols;j++){
+      if(markers[i][j]==2){
+
+	markersvec.push_back(Point(i,j));
+      }  
+    }
+}
+
+
+
+       // vector<vector<int>> markerMap(image.rows, vector<int>(image.cols, 0));
+       // vector<vector<bool>> inprioq(image.rows, vector<bool>(image.cols, false));
+       bool** inprioq=new bool*[rows];
+       int** markerMap=new int*[rows];
+      // #pragma omp parallel for
+       for(int i=0;i<rows;i++){
+          inprioq[i]=new bool[cols];
+          markerMap[i]=new int[cols];
+       }
+       
+       
+
+
+        
+
+       /* vector<int> dx{-1, 1, 0, 0, -1, -1, 1, 1};
+        vector<int> dy{0, 0, -1, 1, -1,  1, 1, -1};
+        */
+
+       int dx[NUMSIZE]={-1, 1, 0, 0, -1, -1, 1, 1};
+       int dy[NUMSIZE]={0, 0, -1, 1, -1,  1, 1, -1};
+
+        // Put markers in priority queue
+	//
+	//
+	
+        int id = 1;
+        Mat testDuplicate;
+        duplImage.copyTo(testDuplicate);
+        Mat dstImage(duplImage.rows,duplImage.cols,CV_8UC3,Scalar::all(0));
+        
+      /* #pragma omp parallel for
+       for(vector<Point>::iterator markit=markers.begin();markit<markers.end();markit++) {
+     
+            markerMap[(*markit).x][(*markit).y] = id;
+           // cout<<"--------------------------------"<<endl;
+           // cout<<"markitx:"<<(*markit).x<<endl;
+
+          //  cout<<"markity:"<<(*markit).y<<endl;
+            for(int i = 0; i < 4; i++) {
+
+                int newX = (*markit).x + dx[i];
+                int newY = (*markit).y + dy[i];
+                if(newX < 0 || newY < 0 || newX >= image.rows || newY >= image.cols) {
+                    continue;
+                }
+                //cout<<"The current marker point:"<<marker<<endl;
+               // cout<<(int)image.at<uchar>(marker.x, marker.y)<<endl;
+               // cout<<"----------------"<<endl;
+               // cout<<"next position:"<<"["<<newX<<","<<newY<<"]"<<endl;
+               // cout<<(int)image.at<uchar>(newX, newY)<<endl;
+
+                prioq.push( Pixel( (int) image.at<uchar>(newX, newY), newX, newY) );//start from the neighuobors who got bigger value
+                
+            }
+
+            id++;
+        }
+        
+*/
+/*
+        for(auto marker: markers) {
+     
+            markerMap[marker.x][marker.y] = id;
+            
+            for(int i = 0; i < 4; i++) {
+
+                int newX = marker.x + dx[i];
+                int newY = marker.y + dy[i];
+                if(newX < 0 || newY < 0 || newX >= image.rows || newY >= image.cols) {
+                    continue;
+                }
+                //cout<<"The current marker point:"<<marker<<endl;
+               // cout<<(int)image.at<uchar>(marker.x, marker.y)<<endl;
+               // cout<<"----------------"<<endl;
+               // cout<<"next position:"<<"["<<newX<<","<<newY<<"]"<<endl;
+               // cout<<(int)image.at<uchar>(newX, newY)<<endl;
+
+                prioq.push( Pixel( (int) image.at<uchar>(newX, newY), newX, newY) );//start from the neighuobors who got bigger value
+                
+            }
+
+            id++;
+        }
+
+*/
+
+//int **markerMap=new int*[image.rows];
+//for(int i=0;i<image.rows;i++){
+ //  markerMap[i]=new int[image.cols]
+//}
+//cout<<"the begin of index :["<<((*markersvec.begin()).x)<<","<<((*markersvec.begin()).y)<<"]"<<endl;
+//cout<<"the end index"<<(*(markersvec.end()-1).x)<<","<<((*(markersvec.end()-1)).y)<<endl;
+
+
+int vecsize=markersvec.size();
+cout<<"vecsize"<<vecsize<<endl;
+
+//cout<<"markersvec"<<markersvec.at(3).x<<endl;
+//cout<<"markersvec"<<markersvec.at(3).y<<endl;
+
+
+
+ //#pragma omp parallel for
+// for(vector<Point>::iterator markit=markersvec.begin();markit<markersvec.end();markit++) {
+  for(int i=0;i<vecsize;i++){   
+            markerMap[(markersvec.at(i)).x][(markersvec.at(i)).y] = id;
+            
+            for(int i = 0; i < 4; i++) {
+
+                int newX = (markersvec.at(i)).x + dx[i];
+                int newY = (markersvec.at(i)).y + dy[i];
+                if(newX < 0 || newY < 0 || newX >= rows || newY >= cols) {
+                    continue;
+                }
+                //cout<<"The current marker point:"<<marker<<endl;
+               // cout<<(int)image.at<uchar>(marker.x, marker.y)<<endl;
+               // cout<<"----------------"<<endl;
+               // cout<<"next position:"<<"["<<newX<<","<<newY<<"]"<<endl;
+               // cout<<(int)image.at<uchar>(newX, newY)<<endl;
+               
+                prioq.push( Pixel(image[newX][newY], newX, newY) );//start from the neighuobors who got bigger value
+                //container vectir store data object Pixel( (int) image.at<uchar>(newX, newY), newX, newY)
+              //  prioq1.push( Pixel( (int) image.at<uchar>(newX, newY), newX, newY) );
+            }
+
+            id++;
+        }
+
+
+cout<<"queue size"<<prioq.size()<<endl;
+/*
+while(!prioq.empty()){
+ Pixel postions=prioq.top();
+ cout<<"Value:"<<postions.val<<":["<<postions.x<<","<<postions.y<<"]"<<endl;
+
+prioq.pop();
+}
+*/
+
+
+
+/*for(int i=0;i<10;i++){
+
+ cout<<"the value of prioq"<<prioq1.top()<<endl;
+
+
+}
+
+*/
+//cout<<"until now it is ok"<<endl;
+
+
+
+
+
+
+
+
+
+
+             // cout<<"The first time when the next points,the size is: "<<prioq.size()<<endl;
+
+             // priority_queue<Pixel,vector<Pixel>,Compare> tmp_prioq;
+
+            //  tmp_prioq=prioq;
+
+     /*
+        string filename7="/opt/test7.txt";
+        ofstream fout7(filename7);
+        for(int i = 0; i < image.rows; i++) {
+           for(int j = 0; j < image.cols; j++) {
+
+             fout7<<markerMap[i][j]<<",";
+             
+
+         }
+           fout7<<endl;
+     }
+          fout7.close();
+*/
+          //each marker got its position and its neighbour<--> ^ and V
+      
+/*
+        for(int i = 0; i < image.rows; i++) {
+            for(int j = 0; j < image.cols; j++) {
+
+             fout5<<((int)markerMap[i][j])<<",";
+             
+
+        }
+         fout5<<endl;
+     }
+     fout5.close();
+     */
+        while(!prioq.empty()) {
+            Pixel curpoint = prioq.top(); prioq.pop();//store the neighbours near ctrx and ctry
+         //   cout<<"curpoint"<<curpoint<<endl;
+            bool canLabel = true;
+            int neighboursLabel = 0;
+            for(int i = 0; i < 8; i++) {
+                int nextX = curpoint.x + dx[i];
+                int nextY = curpoint.y + dy[i];
+                if(nextX < 0 || nextY < 0 || nextX >= rows || nextY >=cols) {
+                    continue;
+                }
+                Pixel next = Pixel(image[nextX][nextY], nextX, nextY);
+                 // cout<<"time is ok"<<endl;
+                // Must check if all surrounding marked have the same color
+                if(markerMap[next.x][next.y] != 0 && next.val != 0) {// id neighbour is not background,
+                    if(neighboursLabel == 0) {
+                        neighboursLabel = markerMap[next.x][next.y];//using id value,all strats from their closest neighbour
+                    } else {//this part tells us that if there is two points at the boundary to see if they are in the same classification,
+                    //two classification there is no merge
+                        if(markerMap[next.x][next.y] != neighboursLabel ) {
+                            canLabel = false;
+                        }
+                    }
+                } else {
+
+                    if(inprioq[nextX][nextY] == false) {
+                        inprioq[next.x][next.y] = true;//aviod duplicate point is chosen,point does not exist in marker or background
+                        prioq.push(next);
+		//	cout<<"time is ok,in inpriq"<<endl;
+                        //the most important expending step,//only the point whose pixel value is 0 in Markermap
+                    }
+                }
+            }
+
+            if(canLabel&&image[curpoint.x][curpoint.y]!=0) {
+                
+                markerMap[curpoint.x][curpoint.y] = neighboursLabel;//in this way it tells us that the points in same region share the same id or label
+               duplImage.at<Vec3b>(curpoint.x,curpoint.y)=colors[markerMap[curpoint.x][curpoint.y]];
+         
+                
+            }
+         
+        }
+//    imshow("duplImage",duplImage);
+  //  waitKey(0);
+  //  cout<<"time is ok,after inpriq"<<endl;
+      /* for(int i = 0; i < image.rows; i++) {
+          for(int j = 0; j < image.cols; j++) {
+
+          fout21<<((int)image.at<uchar>(i,j))<<",";
+             
+
+        }
+         fout21<<endl;
+     }
+       fout21.close();
+       */
+       cv::addWeighted(duplImage,0.4,testDuplicate,0.6,0,dstImage);
+
+    //    imshow("testDuplicate",testDuplicate);
+      //  waitKey(0);
+
+
+	// imshow("dstImage",dstImage);
+        // waitKey(0);
+
+
+     //  cv::imshow("duplicat Imgage",duplImage);
+      // cv::waitKey(0);
+      /*for(int i = 0; i < duplImage.rows; i++) {
+          for(int j = 0; j < duplImage.cols; j++) {
+
+          fout24<<((int)duplImage.at<uchar>(i,j))<<",";
+             
+
+        }
+         fout24<<endl;
+     }
+       fout24.close();
+
+
+*/
+
+/*
+        for(int i = 0; i < dstImage.rows; i++) {
+          for(int j = 0; j < dstImage.cols; j++) {
+
+          fout25<<((int)dstImage.at<uchar>(i,j))<<",";
+             
+
+        }
+         fout25<<endl;
+     }
+       fout25.close();
+       */
+
+        //image.release();
+        duplImage.release();
+        testDuplicate.release();
+        return dstImage;
+    }
