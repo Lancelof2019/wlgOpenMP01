@@ -4,7 +4,7 @@ using namespace cv;
  void WatershedAlg::removeholesopt(int** src,int &pnumThrshold, int &handlingType, int &neighbourType,int pixelThreshold,int &rows,int &cols)  {
   
     int RemoveCount=0;       
-
+    Mat Pointlabel(rows,cols, CV_8UC1,Scalar::all(255) );
 	#pragma omp parallel for 
         for(int i = 0; i < rows; ++i)  {    
  
