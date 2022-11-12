@@ -1,3 +1,13 @@
+struct Compare{
+
+   bool operator()(int* para1, int* para2) {
+        return para1[0] < para2[0];
+    }
+
+};
+
+
+
 int **nextSet= new int*[rows*cols];
 for(int i=0;i<rows*cols;i++){
 
