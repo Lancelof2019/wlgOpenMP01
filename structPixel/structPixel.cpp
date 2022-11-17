@@ -8,7 +8,7 @@ struct Pixel {
     int y;
 
     Pixel(int val, int x, int y) : val(val), x(x), y(y) {}
-    }
+    
 };
 
 
